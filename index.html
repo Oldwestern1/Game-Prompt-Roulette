@@ -341,7 +341,7 @@
                 "Sports": ["Soccer", "Basketball", "Baseball", "Boxing", "The Olympics", "Football", "Hockey", "Golf", "Tennis", "Racing"],
                 "Vibes": ["Cozy", "Competitive", "Simple", "Chaotic", "Relaxing", "Fast-Paced", "Tense", "Whimsical", "Grim", "Strategic", "Abstract", "Nostalgic", "Surreal", 
     "Tactical"],
-                "Word Inspiration": ["Crux", "Redolent", "Interloper", "Deleterious", "Foible", "Saturnine", "Blandishment", "Ephemeral", "Labyrinthine", "Quixotic", "Halcyon", "Vellichor",  "Petrichor", "Ineffable", "Mellifluous", "Sonder", "Liminal"]
+                "Word Inspiration": ["Crux", "Redolent", "Interloper", "Deleterious", "Foible", "Saturnine", "Blandishment", "Ephemeral", "Labyrinthine", "Quixotic", "Halcyon", "Ineffable", "Mellifluous", "Sonder", "Liminal", "Substitute", "Combine", "Adapt", "Modify", "put to another use", "Eliminate", "repurpose"]
             },
             components: {
                 "Cards & Dice": ["18 Cards", "10 Cards", "5 Cards", "a Deck of Cards", "a Single Card", "Two Decks of Cards", "Playing Cards", "Tarot Cards", "1 Die", "2 Dice", "5 Dice", "10 Dice", "Polyhedral Dice", "Custom Dice"],
@@ -350,6 +350,7 @@
                 "Containers & Structural": ["Cups", "a Game Board", "a Shared Board", "Individual Boards", "a Hidden Envelope", "a Secret Note", "a Locked Box", "a Container", "a Screen", "a Blindfold", "a Pouch", "Wax Seals", "Stacking Pieces", "Folding Pieces", "Sliding Pieces", "Rotating Pieces", "Puzzle Pieces", "Building Pieces", "Miniatures", "Figures", "Meeples", "Wooden Pieces", "Plastic Pieces", "Metal Pieces", "Glass Pieces", "Transparent Pieces", "Transparent Overlays", "Tiles", "Hex Tiles", "Dominoes", "Interlocking Pieces", "a Pop-Up Tent Piece"],
                 "Utilities & Toys": ["String", "Rope", "Magnets", "Keys", "Locks", "Chains", "Rings", "Yarn", "a Bell", "a Whistle", "Feathers", "Shells", "a Magnifying Glass", "a Compass", "a Folding Map", "a Spyglass", "a Velcro Strip", "a Cloth Map", "Mini Easels", "a Kazoo", "a Buzzer", "a Hand Drum", "a Hat", "a Cape", "a Sash", "Wristbands", "a Mask", "a Flashlight", "Glow Sticks", "Glow-in-the-Dark Pieces", "a Toy Phone", "a Walkie-Talkie", "a Toy Remote Control", "a Launcher", "a Catapult", "a Cannon"],
             }
+          
         };
 
         let enabledSections = { themes: true, mechanics: true, components: true };
@@ -361,7 +362,12 @@
             suits_outline: ['\u2661', '\u2662', '\u2664', '\u2667'],
             suits_solid: ['\u2660', '\u2663', '\u2665', '\u2666'],
             chess: ['\u2654', '\u2655', '\u2656', '\u2657', '\u2658', '\u2659', '\u265A', '\u265B', '\u265C', '\u265D', '\u265E', '\u265F'],
+            draughts: ['⛀', '⛁', '⛂', '⛃'],
             dice: ['\u2680', '\u2681', '\u2682', '\u2683', '\u2684', '\u2685'],
+            dominoes: [
+            '🁭', '🁵', '🁢', '🁣', '🁤', '🁥', '🁦', '🁧', '🁨', '🁩', '🁪', '🁫', '🁬', '🁭', '🁮', '🁯', '🁰', '🁱', '🁲', '🁳',
+            '🁴', '🁵', '🁶', '🁷', '🁸', '🁹', '🁺', '🁻', '🁼', '🁽', '🁾', '🁿', '🂀', '🂁', '🂂', '🂃', '🂄', '🂅', '🂆', '🂇',
+            '🂈', '🂉', '🂊', '🂋', '🂌', '🂍', '🂎', '🂏', '🂐', '🂑', '🂒', '🂓'], 
             shapes: ['◈', '◆', '◇', '◉', '✦', '✧', '⟡', '⟢', '⟣', '⟤'],
             blocks: ['░', '▒', '▓', '█', '▌', '▐', '▀', '▄'],
             cards: [
@@ -370,12 +376,13 @@
                 '🂧', '🂷', '🃇', '🃗', '🂨', '🂸', '🃈', '🃘', '🂩', '🂹', '🃉', '🃙',
                 '🂪', '🂺', '🃊', '🃚', '🂫', '🂻', '🃋', '🃛', '🂬', '🂼', '🃌', '🃜',
                 '🂭', '🂽', '🃍', '🃝', '🂮', '🂾', '🃎', '🃞', '🂠', '🂿', '🃟'
-            ]
+            ],
+            mahjong: ['🀀', '🀁', '🀃', '🀅']
         };
 
         const WATERMARK_GLYPHS = [
-            ...GLYPHS.suits_outline, ...GLYPHS.suits_solid, ...GLYPHS.chess,
-            ...GLYPHS.dice, ...GLYPHS.shapes, ...GLYPHS.blocks, ...GLYPHS.cards
+            ...GLYPHS.suits_outline, ...GLYPHS.suits_solid, ...GLYPHS.chess, ...GLYPHS.draughts,
+            ...GLYPHS.dice, ...GLYPHS.dominoes, ...GLYPHS.shapes, ...GLYPHS.blocks, ...GLYPHS.cards, ...GLYPHS.mahjong
         ];
 
         const WATERMARK_SCALE = {};
@@ -1139,46 +1146,8 @@
                     }
                 }
 
-            // ── DIAGONAL 45° (rotated grid, seamlessly tiling) ────────────────────
-            // Strategy: lay a normal grid in a big buffer, wrap in rotate(45), then
-            // crop to a square tile whose side = step*√2. Adjacent tiles share the same
-            // diagonal rhythm, giving a seamless diamond pattern.
-            } else if (layout === 'diagonal45') {
-                const step = 110;                        // spacing between dice centers
-                const tileSize = Math.round(step * Math.SQRT2); // ≈155 — the repeat unit at 45°
-                tileW = tileSize; tileH = tileSize;
-
-                // We need to fill a rotated square that is tileSize wide.
-                // After rotating 45°, the bounding box of a tileSize×tileSize square
-                // is tileSize*√2 wide — so we generate a grid large enough to cover that,
-                // centered on the tile center, then rotate.
-                const cx0 = tileSize / 2, cy0 = tileSize / 2;
-                const cover = Math.ceil(tileSize * Math.SQRT2 / 2) + step;
-                const startI = Math.floor(-cover / step);
-                const endI   = Math.ceil( cover / step);
-
-                const gridItems = [];
-                for (let r = startI; r <= endI; r++) {
-                    for (let c = startI; c <= endI; c++) {
-                        const glyph = glyphPool[Math.floor(rand() * glyphPool.length)];
-                        const color = pickColor();
-                        const x = cx0 + c * step;
-                        const y = cy0 + r * step;
-                        const op = opacity(color).toFixed(2);
-                        gridItems.push(
-                            `<text x='${x.toFixed(1)}' y='${y.toFixed(1)}' font-size='${styleObj.size || 62}' fill='${color}' opacity='${op}' ` +
-                            `font-family='sans-serif' text-anchor='middle' dominant-baseline='middle'>${glyph}</text>`
-                        );
-                    }
-                }
-
-                // Wrap the whole grid in a single 45° rotation around the tile center
-                cells.push(
-                    `<g transform='rotate(45 ${cx0.toFixed(1)} ${cy0.toFixed(1)})'>${gridItems.join('')}</g>`
-                );
-
             } else {
-                // Fallback
+               
                 tileW = 100; tileH = 100;
             }
 
@@ -1198,7 +1167,7 @@
             const ring = document.getElementById('wallpaperProgressRing');
             const ringCircle = ring.querySelector('circle');
             const LONG_PRESS_MS = 600;
-            const RING_CIRCUMFERENCE = 138.23; // 2π × 22
+            const RING_CIRCUMFERENCE = 138.23; 
 
             window.refreshWallpaper = function () {
                 const styleObj = WALLPAPER_STYLES[wallpaperStyleIndex];
@@ -1211,19 +1180,19 @@
                     layer.style.backgroundSize = `${tile.width}px ${tile.height}px`;
                     layer.classList.add('visible');
                 }
-                // Tooltip shows current style
+                
                 btn.title = `Background: ${WALLPAPER_STYLES[wallpaperStyleIndex].label} — click to cycle, hold to turn off`;
                 btn.setAttribute('aria-label', `Background style: ${WALLPAPER_STYLES[wallpaperStyleIndex].label}. Click to cycle, hold to turn off.`);
             };
 
-            // Long-press state
+          
             let pressTimer = null;
             let pressStartTime = null;
             let rafId = null;
             let didLongPress = false;
 
             function startPress(e) {
-                // Ignore right-click
+            
                 if (e.button !== undefined && e.button !== 0) return;
                 didLongPress = false;
                 pressStartTime = Date.now();
@@ -1244,8 +1213,8 @@
                     didLongPress = true;
                     cancelAnimationFrame(rafId);
                     ringCircle.style.strokeDashoffset = 0;
-                    // Turn wallpaper off
-                    wallpaperStyleIndex = 0; // 'Off' is index 0
+                  
+                    wallpaperStyleIndex = 0; 
                     window.refreshWallpaper();
                     btn.classList.add('long-pressing');
                     setTimeout(() => btn.classList.remove('long-pressing'), 300);
@@ -1258,7 +1227,7 @@
                 cancelAnimationFrame(rafId);
                 pressTimer = null;
                 pressStartTime = null;
-                // Animate ring back to empty
+                
                 ringCircle.style.transition = 'stroke-dashoffset 0.2s ease';
                 ringCircle.style.strokeDashoffset = RING_CIRCUMFERENCE;
                 setTimeout(() => {
@@ -1276,12 +1245,12 @@
             btn.addEventListener('touchcancel', endPress);
 
             btn.addEventListener('click', (e) => {
-                if (didLongPress) { didLongPress = false; return; } // swallow click after long press
+                if (didLongPress) { didLongPress = false; return; }
                 wallpaperStyleIndex = (wallpaperStyleIndex + 1) % WALLPAPER_STYLES.length;
                 window.refreshWallpaper();
             });
 
-            // Set initial tooltip
+           
             window.refreshWallpaper();
         }
     </script>
