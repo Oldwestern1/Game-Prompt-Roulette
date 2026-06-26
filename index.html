@@ -312,6 +312,38 @@
     </div>
 
     <script>
+        // SCAMPER: design thinking prompts tied to specific keywords in the Word Inspiration pool.
+        // Each entry is a function that takes up to two mechanic names and returns an HTML question string.
+        // If a rolled theme matches one of these keys, the question gets appended to the generated prompt.
+        const SCAMPER = {
+            "Substitute": (m1, m2) => m1 === m2 
+                ? How could you <span class="highlight">substitute</span> a core element or material within the ${m1} mechanic?
+                : How could you <span class="highlight">substitute</span> a core element or material within the ${m1} or ${m2} mechanics?,
+            "Combine": (m1, m2) => How could you <span class="highlight">combine</span> the ${m1} mechanic with components from an entirely different genre?,
+            "Adapt": (m1, m2) => How could you <span class="highlight">adapt</span> a mechanism from a classic parlor game into ${m1}?,
+            "Modify": (m1, m2) => How could you <span class="highlight">modify</span>, magnify, or minify the scale of components used in ${m1}?,
+            "Put to another use": (m1, m2) => How could you <span class="highlight">put</span> the components or rules of ${m1} <span class="highlight">to another use</span> mid-game?,
+            "Eliminate": (m1, m2) => What happens if you completely <span class="highlight">eliminate</span> a standard rule or requirement from ${m1}?,
+            "Reverse": (m1, m2) => How could you <span class="highlight">reverse</span> the turn order or victory conditions associated with ${m1}?
+        };
+        // VIBES_SET: themes that describe a tone or feeling rather than a subject.
+        // These get phrased as "with a Cozy tone" instead of "about Cozy" in the prompt.
+        const VIBES_SET = new Set([
+            'Cozy','Competitive','Simple','Chaotic','Relaxing','Fast-Paced',
+            'Tense','Whimsical','Grim','Strategic','Abstract','Nostalgic',
+            'Surreal','Tactical',
+        ]);
+
+        // INSPIRATION_SET: unusual/evocative words that spark creative thinking.
+        // These get phrased as "Use the word X to inspire you" in the prompt.
+        const INSPIRATION_SET = new Set([
+            'Crux','Redolent','Interloper','Deleterious','Foible','Saturnine',
+            'Blandishment','Ephemeral','Labyrinthine','Quixotic','Halcyon',
+            'Ineffable','Mellifluous','Sonder',
+        ]);
+        // masterData: the full pool of options for each category.
+        // Organised into named groups (e.g. "Cards & Drafting") purely for display in the pool picker.
+        // To add new items, just add them to the relevant array. To add a new group, add a new key.
         const masterData = {
             mechanics: {
                 "Actions & Phase Management": ["Acting", "Action / Event", "Action Drafting", "Action Points", "Action Queue", "Action Retrieval", "Action Timer", "Elapsed Real Time Ending", "Events", "Expiring Actions", "Simultaneous Action Selection", "Variable Phase Order", "Programmed Movement"],
@@ -339,9 +371,8 @@
                 "Animals": ["Dinosaurs", "Insects", "Dogs", "Cats", "Birds", "Horses", "Bears", "Wolves", "Sharks", "Whales", "Bees", "Ants", "Owls", "Foxes"],
                 "Vehicles": ["Trains", "Airships", "Submarines", "Spaceships", "Cars", "Planes", "Trucks", "Motorcycles", "Race Cars", "Monster Trucks", "Helicopters", "Hot Air Balloons", "Tanks", "Bicycles", "Sleds", "Gliders", "Buses", "Rickshaws", "Hovercrafts", "Demolition Derbies"],
                 "Sports": ["Soccer", "Basketball", "Baseball", "Boxing", "The Olympics", "Football", "Hockey", "Golf", "Tennis", "Racing"],
-                "Vibes": ["Cozy", "Competitive", "Simple", "Chaotic", "Relaxing", "Fast-Paced", "Tense", "Whimsical", "Grim", "Strategic", "Abstract", "Nostalgic", "Surreal", 
-    "Tactical"],
-                "Word Inspiration": ["Crux", "Redolent", "Interloper", "Deleterious", "Foible", "Saturnine", "Blandishment", "Ephemeral", "Labyrinthine", "Quixotic", "Halcyon", "Ineffable", "Mellifluous", "Sonder", "Liminal", "Substitute", "Combine", "Adapt", "Modify", "put to another use", "Eliminate", "repurpose"]
+                "Vibes": ["Cozy", "Competitive", "Simple", "Chaotic", "Relaxing", "Fast-Paced", "Tense", "Whimsical", "Grim", "Strategic", "Abstract", "Nostalgic", "Surreal", "Tactical"],
+                "Word Inspiration": ["Crux", "Redolent", "Interloper", "Deleterious", "Foible", "Saturnine", "Blandishment", "Ephemeral", "Labyrinthine", "Quixotic", "Halcyon", "Ineffable", "Mellifluous", "Sonder", "Substitute", "Combine", "Adapt", "Modify", "put to another use", "Eliminate", "Reverse"]
             },
             components: {
                 "Cards & Dice": ["18 Cards", "10 Cards", "5 Cards", "a Deck of Cards", "a Single Card", "Two Decks of Cards", "Playing Cards", "Tarot Cards", "1 Die", "2 Dice", "5 Dice", "10 Dice", "Polyhedral Dice", "Custom Dice"],
@@ -350,14 +381,15 @@
                 "Containers & Structural": ["Cups", "a Game Board", "a Shared Board", "Individual Boards", "a Hidden Envelope", "a Secret Note", "a Locked Box", "a Container", "a Screen", "a Blindfold", "a Pouch", "Wax Seals", "Stacking Pieces", "Folding Pieces", "Sliding Pieces", "Rotating Pieces", "Puzzle Pieces", "Building Pieces", "Miniatures", "Figures", "Meeples", "Wooden Pieces", "Plastic Pieces", "Metal Pieces", "Glass Pieces", "Transparent Pieces", "Transparent Overlays", "Tiles", "Hex Tiles", "Dominoes", "Interlocking Pieces", "a Pop-Up Tent Piece"],
                 "Utilities & Toys": ["String", "Rope", "Magnets", "Keys", "Locks", "Chains", "Rings", "Yarn", "a Bell", "a Whistle", "Feathers", "Shells", "a Magnifying Glass", "a Compass", "a Folding Map", "a Spyglass", "a Velcro Strip", "a Cloth Map", "Mini Easels", "a Kazoo", "a Buzzer", "a Hand Drum", "a Hat", "a Cape", "a Sash", "Wristbands", "a Mask", "a Flashlight", "Glow Sticks", "Glow-in-the-Dark Pieces", "a Toy Phone", "a Walkie-Talkie", "a Toy Remote Control", "a Launcher", "a Catapult", "a Cannon"],
             }
-          
         };
 
+        // State: tracks which categories are switched on, what was last rolled, and which cards are locked.
         let enabledSections = { themes: true, mechanics: true, components: true };
         let currentResults = { mechanics: [], themes: [], components: [] };
         let lockedState = { mechanics: [], themes: [], components: [] };
-        const sectionKeys = ['themes', 'mechanics', 'components'];
+        const sectionKeys = ['themes', 'mechanics', 'components']; // order controls display order
 
+        // GLYPHS: unicode symbol sets used for the decorative background wallpaper patterns.
         const GLYPHS = {
             suits_outline: ['\u2661', '\u2662', '\u2664', '\u2667'],
             suits_solid: ['\u2660', '\u2663', '\u2665', '\u2666'],
@@ -380,11 +412,13 @@
             mahjong: ['🀀', '🀁', '🀃', '🀅']
         };
 
+        // All glyph sets merged into one flat list for picking random card watermarks.
         const WATERMARK_GLYPHS = [
             ...GLYPHS.suits_outline, ...GLYPHS.suits_solid, ...GLYPHS.chess, ...GLYPHS.draughts,
             ...GLYPHS.dice, ...GLYPHS.dominoes, ...GLYPHS.shapes, ...GLYPHS.blocks, ...GLYPHS.cards, ...GLYPHS.mahjong
         ];
 
+        // Some glyphs are naturally wider/taller, so we scale them up so they all look similar in size on cards.
         const WATERMARK_SCALE = {};
         GLYPHS.suits_outline.forEach(g => WATERMARK_SCALE[g] = 1.5);
         GLYPHS.suits_solid.forEach(g => WATERMARK_SCALE[g] = 1.4);
@@ -394,12 +428,16 @@
         GLYPHS.blocks.forEach(g => WATERMARK_SCALE[g] = 1);
         GLYPHS.cards.forEach(g => WATERMARK_SCALE[g] = 1.1);
 
+        // Turns a string into a stable number — used to give each card a consistent random watermark
+        // based on its content, so the same item always gets the same glyph/position.
         function hashString(str) {
             let h = 0;
             for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
             return Math.abs(h);
         }
 
+        // Generates a list of pseudo-random numbers from a seed. Same seed always gives same numbers,
+        // so watermark properties (glyph, position, rotation) are stable per card item.
         function seededValues(seed, count) {
             let s = seed % 2147483647;
             if (s <= 0) s += 2147483646;
@@ -411,6 +449,8 @@
             return out;
         }
 
+        // Picks a watermark glyph, size, rotation, and position for a result card.
+        // Uses the item name + card position as a seed so the same item always looks the same.
        function getWatermarkFor(categoryKey, subIndex, itemName) {
     const seed = hashString(`${categoryKey}:${subIndex}:${itemName}`);
     const [rGlyph, rLeft, rTop, rSize, rRotation, rVAnchor] = seededValues(seed, 6);
@@ -427,6 +467,7 @@
     return { glyph, scale, rotation, left, vAnchor, vOffset };
 }
 
+        // Called when a category toggle switch is flipped. Updates the enabled state and dims the row visually.
         function updateRowState(key) {
             const isChecked = document.getElementById(`toggle-${key}`).checked;
             enabledSections[key] = isChecked;
@@ -435,6 +476,8 @@
             updateSpinAvailability();
         }
 
+        // Builds the expandable pool pickers in the settings panel from masterData.
+        // Each category becomes a collapsible <details> block with checkboxes for every item.
         function buildPoolPickers() {
             Object.keys(masterData).forEach(key => {
                 const container = document.getElementById(`pool-${key}`);
@@ -490,6 +533,7 @@
             sectionKeys.forEach(key => { updatePoolMeta(key); Object.keys(masterData[key]).forEach(category => updateCategoryCheckState(key, category)); });
         }
 
+        // Finds the checkbox list element for a given category inside a pool.
         function getCategoryContentEl(key, category) {
             const container = document.getElementById(`pool-${key}`);
             if (!container) return null;
@@ -498,6 +542,7 @@
             return null;
         }
 
+        // Checks or unchecks all items in a category at once (used by the category-level checkbox).
         function setCategoryChecked(key, category, checked) {
             const scope = getCategoryContentEl(key, category);
             if (!scope) return;
@@ -505,6 +550,7 @@
             updateCategoryCheckState(key, category); updatePoolMeta(key); updateSpinAvailability();
         }
 
+        // Updates the category-level checkbox to show checked / unchecked / indeterminate (mixed).
         function updateCategoryCheckState(key, category) {
             const scope = getCategoryContentEl(key, category);
             if (!scope) return;
@@ -516,11 +562,13 @@
             else { catCheck.checked = false; catCheck.classList.add('indeterminate'); catCheck.indeterminate = true; }
         }
 
+        // Called whenever a single pool item checkbox changes — updates the category header and spin button.
         function onPoolItemChange(key, category) {
             if (category) updateCategoryCheckState(key, category);
             updatePoolMeta(key); updateSpinAvailability();
         }
 
+        // Shows "X of Y selected" below each pool, or a warning if nothing is selected.
         function updatePoolMeta(key) {
             const meta = document.getElementById(`pool-meta-${key}`);
             if (!meta) return;
@@ -530,6 +578,8 @@
             else { meta.textContent = `${checked} of ${total} selected`; meta.classList.remove('warn'); }
         }
 
+        // Filters the visible pool items as the user types in the search box.
+        // Hides non-matching items and auto-expands categories that have matches.
         function filterPool(inputElement) {
             const query = inputElement.value.toLowerCase();
             const poolWrapper = inputElement.parentElement;
@@ -550,6 +600,7 @@
             if (poolContainer) poolContainer.dataset.suppressAccordion = 'false';
         }
 
+        // Handles "Show pool / Hide pool" toggle buttons — closes any other open pool first.
         document.addEventListener('click', function(e) {
             if (e.target && e.target.classList.contains('pool-toggle')) {
                 const targetId = e.target.getAttribute('data-target');
@@ -567,8 +618,10 @@
             }
         });
 
+        // Returns only the currently checked items from a pool as a flat array of name strings.
         function getFilteredPool(key) { return Array.from(document.querySelectorAll(`#pool-${key} input[type=checkbox]:not(.cat-check):checked`)).map(cb => cb.getAttribute('data-name')); }
 
+        // Picks a random item from the pool, excluding anything already in the current roll (no duplicates).
         function getRandomItemWithoutDupes(pool, currentSelections) {
             const trackingNames = currentSelections.map(s => s.name);
             const filteredPool = pool.filter(name => !trackingNames.includes(name));
@@ -576,6 +629,8 @@
             return filteredPool[Math.floor(Math.random() * filteredPool.length)];
         }
 
+        // Makes sure the number inputs (how many to roll) don't exceed the available pool size.
+        // e.g. if only 3 mechanics are checked, you can't roll 5.
         function clampNumberInputs() {
             sectionKeys.forEach(key => {
                 const input = document.getElementById(`num${key.charAt(0).toUpperCase() + key.slice(1)}`);
@@ -589,6 +644,8 @@
             });
         }
 
+        // Enables or disables the spin button and shows an error message if the setup isn't valid
+        // (e.g. no categories on, or a category is on but has no items selected).
         function updateSpinAvailability() {
             const errorEl = document.getElementById('spinError');
             const spinBtn = document.getElementById('spinBtn');
@@ -600,6 +657,8 @@
             errorEl.textContent = ''; spinBtn.disabled = false;
         }
 
+        // Animates a card's text rapidly cycling through random values before landing on the final result.
+        // Slows down gradually like a slot machine. Returns a Promise that resolves when done.
         function doRouletteSpin(valueNode, pool, finalItemData, categoryKey) {
             return new Promise(resolve => {
                 let ticks = 0; const maxTicks = 20 + Math.floor(Math.random() * 10); let delay = 15;
@@ -620,6 +679,7 @@
             });
         }
 
+        // Builds a single result card element with a lock button, item name, watermark glyph, and reroll button.
         function createCardNode(title, item, categoryKey, subIndex, isSpinning, globalIndex) {
             const card = document.createElement('div');
             card.className = 'result-card'; card.dataset.key = categoryKey; card.dataset.index = subIndex;
@@ -663,8 +723,10 @@
             return card;
         }
 
+        // Flips the locked state for one card and updates its visual.
         function toggleLock(key, subIndex) { lockedState[key][subIndex] = !lockedState[key][subIndex]; updateCardLockUI(key, subIndex); }
 
+        // Updates a card's lock button and disables/enables its reroll button to match the locked state.
         function updateCardLockUI(key, subIndex) {
             const card = document.querySelector(`.result-card[data-key="${key}"][data-index="${subIndex}"]`);
             if (!card) return;
@@ -677,6 +739,8 @@
             rerollBtn.disabled = isLocked;
         }
 
+        // Clears and redraws all result cards. If isFullSpin is true, kicks off the slot-machine animation
+        // for any unlocked cards (locked cards just show their existing value immediately).
         async function renderAllCards(isFullSpin) {
             const container = document.getElementById('resultsContainer');
             let expectedCount = 0; sectionKeys.forEach(key => { if (enabledSections[key]) expectedCount += currentResults[key].length; });
@@ -716,6 +780,7 @@
             }
         }
 
+        // Re-rolls just one card without affecting the others. Picks a new item that isn't already shown.
         async function rerollSingleCard(cardElement, key, subIndex) {
             if (lockedState[key][subIndex]) return;
             const pool = getFilteredPool(key); if (pool.length === 0) return;
@@ -733,6 +798,7 @@
             generatePromptSentence();
         }
 
+        // Disables or re-enables all reroll buttons during a spin (locked cards always stay disabled).
         function setAllRerollsDisabled(disabled) {
             document.querySelectorAll('.btn-reroll').forEach(btn => {
               
@@ -746,34 +812,118 @@
             });
         }
 
+        // Wraps a name in a highlight span so it appears in the accent colour in the prompt.
+        function h(name) {
+    return `<span class="highlight">${name}</span>`;
+}
+
+        // Joins a list of strings naturally: "A", "A and B", "A, B, and C".
+        function joinList(items) {
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return `${items[0]} and ${items[1]}`;
+    return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+        // Builds and displays the final prompt sentence from whatever is currently rolled.
+        // Sorts themes into three buckets (standard / vibes / inspirations) and handles SCAMPER keywords.
+        // Called after every spin or reroll.
         function generatePromptSentence() {
-            const promptBox = document.getElementById('promptBox'); const finalPrompt = document.getElementById('finalPrompt');
-            if ((!enabledSections.themes && !enabledSections.mechanics && !enabledSections.components) || !sectionKeys.some(k => enabledSections[k] && currentResults[k].length > 0)) { promptBox.style.display = 'none'; return; }
+    const promptBox   = document.getElementById('promptBox');
+    const finalPrompt = document.getElementById('finalPrompt');
+    if (!sectionKeys.some(k => enabledSections[k] && currentResults[k].length > 0)) {
+        promptBox.style.display = 'none';
+        return;
+    }
 
-            let sentenceParts = [];
-            if (enabledSections.themes && currentResults.themes.length > 0) {
-                let list = currentResults.themes.map(t => `<span class="highlight">${t.name}</span>`);
-                sentenceParts.push(`about ${list.length === 1 ? list[0] : list.length === 2 ? `${list[0]} and ${list[1]}` : `${list.slice(0, -1).join(", ")}, and ${list[list.length - 1]}`}`);
-            }
-            if (enabledSections.mechanics && currentResults.mechanics.length > 0) {
-                let list = currentResults.mechanics.map(m => `<span class="highlight">${m.name}</span>`);
-                sentenceParts.push(`featuring ${list.length === 1 ? list[0] : list.length === 2 ? `${list[0]} and ${list[1]}` : `${list.slice(0, -1).join(", ")}, and ${list[list.length - 1]}`} ${currentResults.mechanics.length === 1 ? "mechanic" : "mechanics"}`);
-            }
-            if (enabledSections.components && currentResults.components.length > 0) {
-                let list = currentResults.components.map(c => `${c.rule === 'use' ? 'using' : 'without'} <span class="highlight">${c.name}</span>`);
-                sentenceParts.push(list.length === 1 ? list[0] : list.length === 2 ? `${list[0]} and ${list[1]}` : `${list.slice(0, -1).join(", ")}, and ${list[list.length - 1]}`);
-            }
+    
+    const mechanicNames = (enabledSections.mechanics && currentResults.mechanics.length > 0)
+        ? currentResults.mechanics.map(m => m.name)
+        : [];
 
-            let finalOutput = "";
-            if (sentenceParts.length === 1) finalOutput = `Design a game ${sentenceParts[0]}.`;
-            else if (sentenceParts.length === 2) finalOutput = `Design a game ${sentenceParts[0]} ${sentenceParts[1]}.`;
-            else if (sentenceParts.length === 3) finalOutput = `Design a game ${sentenceParts[0]} ${sentenceParts[1]}, while ${sentenceParts[2]}.`;
-            finalPrompt.innerHTML = finalOutput.charAt(0).toUpperCase() + finalOutput.slice(1);
-            promptBox.style.display = 'block';
+    // Classify themes
+    const standardThemes = [];
+    const vibes          = [];
+    const inspirations   = [];
+    let   scamperKey     = null;
 
-            const copyBtn = document.getElementById('copyBtn'); copyBtn.classList.remove('copied'); copyBtn.textContent = 'Copy prompt';
-        }
+    if (enabledSections.themes && currentResults.themes.length > 0) {
+        currentResults.themes.forEach(({ name }) => {
+            const matchedScamper = Object.keys(SCAMPER).find(
+                k => k.toLowerCase() === name.toLowerCase()
+            );
+            if (matchedScamper)         scamperKey = matchedScamper;
+            else if (VIBES_SET.has(name))        vibes.push(name);
+            else if (INSPIRATION_SET.has(name))  inspirations.push(name);
+            else                                 standardThemes.push(name);
+        });
+    }
 
+    // Build components
+    const useItems     = [];
+    const withoutItems = [];
+    if (enabledSections.components && currentResults.components.length > 0) {
+        currentResults.components.forEach(c => {
+            if (c.rule === 'use') useItems.push(c.name);
+            else                  withoutItems.push(c.name);
+        });
+    }
+
+    // Assemble sentence parts
+    const parts = [];
+
+    const themeLabels = [
+        ...standardThemes.map(h),
+        ...vibes.map(v => `a ${h(v)} tone`),
+    ];
+    if (themeLabels.length > 0) {
+        parts.push(`about ${joinList(themeLabels)}`);
+    }
+
+    if (mechanicNames.length > 0) {
+        const word = mechanicNames.length === 1 ? 'mechanic' : 'mechanics';
+        parts.push(`featuring ${joinList(mechanicNames.map(h))} ${word}`);
+    }
+
+    const compParts = [];
+    if (useItems.length > 0)     compParts.push(`using ${joinList(useItems.map(h))}`);
+    if (withoutItems.length > 0) compParts.push(`without ${joinList(withoutItems.map(h))}`);
+    if (compParts.length > 0)    parts.push(compParts.join(', '));
+
+    if (parts.length === 0) { promptBox.style.display = 'none'; return; }
+
+    // Join parts with "while" before the component clause (matching original grammar)
+    let out;
+    if (parts.length === 1) {
+        out = `Design a game ${parts[0]}.`;
+    } else if (parts.length === 2) {
+        out = `Design a game ${parts[0]} ${parts[1]}.`;
+    } else {
+        out = `Design a game ${parts.slice(0, -1).join(', ')}, while ${parts[parts.length - 1]}.`;
+    }
+
+    // Word inspirations as a separate sentence
+    if (inspirations.length > 0) {
+        out += ` Use ${joinList(inspirations.map(w => `the word ${h(w)}`))} to inspire you.`;
+    }
+
+    // SCAMPER question appended last
+    if (scamperKey) {
+        const m1 = mechanicNames[0] || '';
+        const m2 = mechanicNames[1] || m1;
+        out += m1
+            ? ` ${SCAMPER[scamperKey](m1, m2)}`
+            : ` Apply ${h(scamperKey)} to your game design.`;
+    }
+
+    finalPrompt.innerHTML = out.charAt(0).toUpperCase() + out.slice(1);
+    promptBox.style.display = 'block';
+
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.classList.remove('copied');
+    copyBtn.textContent = 'Copy prompt';
+}
+
+        // Copies the plain-text version of the prompt to the clipboard and briefly shows "Copied!".
         function copyPrompt() {
             const text = document.getElementById('finalPrompt').textContent;
             const copyBtn = document.getElementById('copyBtn');
@@ -782,12 +932,15 @@
             else { fallbackCopy(text, showCopied); }
         }
 
+        // Older clipboard fallback for browsers that don't support navigator.clipboard.
         function fallbackCopy(text, onSuccess) {
             const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
             document.body.appendChild(ta); ta.select();
             try { document.execCommand('copy'); onSuccess(); } catch (e) {} document.body.removeChild(ta);
         }
 
+        // Main spin function — picks new random items for every unlocked slot, then animates and renders them.
+        // Locked cards carry over unchanged from the previous roll.
         async function startSpin() {
             clampNumberInputs(); updateSpinAvailability();
             if (document.getElementById('spinBtn').disabled) return;
@@ -813,10 +966,13 @@
             currentResults = newResults; await renderAllCards(true); generatePromptSentence(); btn.disabled = false; updateSpinAvailability();
         }
 
+        // Re-validates the spin button whenever a count input changes.
         sectionKeys.forEach(key => { document.getElementById(`num${key.charAt(0).toUpperCase() + key.slice(1)}`).addEventListener('change', () => { clampNumberInputs(); updateSpinAvailability(); }); });
 
+        // Kicks everything off once the page has fully loaded.
         document.addEventListener('DOMContentLoaded', () => { buildPoolPickers(); updateSpinAvailability(); initWallpaperSystem(); initThemeToggle(); updateSpinAvailability(); });
 
+        // Sets up the light/dark mode toggle button in the top-right corner.
         function initThemeToggle() {
             const btn = document.getElementById('modeToggle');
             applyMode(document.body.classList.contains('light-mode'));
@@ -826,6 +982,7 @@
                 applyMode(willBeLight);
             });
         }
+        // Applies the chosen mode — swaps the button icon and refreshes the wallpaper colours.
         function applyMode(isLight) {
             const btn = document.getElementById('modeToggle');
             btn.innerHTML = isLight ? '&#9818;' : '&#9812;';
@@ -834,6 +991,10 @@
             if (typeof window.refreshWallpaper === 'function') window.refreshWallpaper();
         }
 
+        // ─── WALLPAPER SYSTEM ───────────────────────────────────────────────────────
+        // The decorative background pattern. Click the diamond button (bottom-right) to cycle styles,
+        // hold it to turn the wallpaper off. Each entry describes a layout, glyph set, and colour mode.
+        // To add a new style, just add another object to this array.
         const WALLPAPER_STYLES = [
             { label: 'Off', layout: 'none' },
 
@@ -897,13 +1058,17 @@
             { label: 'Lines: Diagonal Double (Neutral)',   layout: 'lined', lineDir: 'diag',      lineStyle: 'double', gap: 32,  colorMode: 'neutral' },
         ];
         
-        let wallpaperStyleIndex = 0;
+        let wallpaperStyleIndex = 0; // which style is currently active
 
+        // Simple pseudo-random number generator. Mixing in WALLPAPER_VARIANT means the same
+        // style can look 6 different ways depending on which session variant was picked.
         function seededRandom(seed) {
-            let s = seed;
+            let s = seed + WALLPAPER_VARIANT * 999983; // offset seed by variant
             return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; };
         }
 
+        // Generates an SVG tile for the current wallpaper style, then sets it as a repeating background.
+        // Handles all layout types: scatter, grid, fill, boxes, lined.
         function buildWallpaperSVG(styleObj, isLight) {
             const neutralColor = isLight ? '#2b2620' : '#cfcfcf';
             const redColor    = isLight ? '#d9483a' : '#ff6b6b';
@@ -1157,51 +1322,57 @@
             return { uri: `data:image/svg+xml,${encodeSvgForUrl(svg)}`, width: tileW, height: tileH };
         }
 
+        // Encodes an SVG string so it can be used directly as a CSS background-image URL.
         function encodeSvgForUrl(svgString) {
             return encodeURIComponent(svgString).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29');
         }
 
+        // Sets up the wallpaper button: click cycles through styles, long-press (600ms) turns it off.
+        // The ring animation around the button shows long-press progress.
         function initWallpaperSystem() {
             const layer = document.getElementById('wallpaperLayer');
-            const btn = document.getElementById('wallpaperStyleBtn');
-            const ring = document.getElementById('wallpaperProgressRing');
+            const btn   = document.getElementById('wallpaperStyleBtn');
+            const ring  = document.getElementById('wallpaperProgressRing');
             const ringCircle = ring.querySelector('circle');
-            const LONG_PRESS_MS = 600;
-            const RING_CIRCUMFERENCE = 138.23; 
+            const LONG_PRESS_MS = 600;         // how long to hold before it counts as a long press
+            const RING_CIRCUMFERENCE = 138.23; // 2π × 22 (the SVG circle's radius)
 
+            // Rebuilds and applies the current wallpaper. Called after every style change or mode switch.
             window.refreshWallpaper = function () {
                 const styleObj = WALLPAPER_STYLES[wallpaperStyleIndex];
                 if (styleObj.layout === 'none') {
-                    layer.classList.remove('visible');
+                    layer.classList.remove('visible'); // "Off" style — just hide it
                 } else {
                     const isLight = document.body.classList.contains('light-mode');
                     const tile = buildWallpaperSVG(styleObj, isLight);
                     layer.style.backgroundImage = `url('${tile.uri}')`;
-                    layer.style.backgroundSize = `${tile.width}px ${tile.height}px`;
+                    layer.style.backgroundSize  = `${tile.width}px ${tile.height}px`;
                     layer.classList.add('visible');
                 }
-                
+                // Keep the tooltip and screen-reader label up to date
                 btn.title = `Background: ${WALLPAPER_STYLES[wallpaperStyleIndex].label} — click to cycle, hold to turn off`;
                 btn.setAttribute('aria-label', `Background style: ${WALLPAPER_STYLES[wallpaperStyleIndex].label}. Click to cycle, hold to turn off.`);
             };
 
-          
-            let pressTimer = null;
+            // Long-press detection state
+            let pressTimer     = null;
             let pressStartTime = null;
-            let rafId = null;
-            let didLongPress = false;
+            let rafId          = null;
+            let didLongPress   = false;
 
+            // Called when the user presses down on the wallpaper button.
+            // Starts the ring animation and sets a timer for the long-press action.
             function startPress(e) {
-            
-                if (e.button !== undefined && e.button !== 0) return;
-                didLongPress = false;
+                if (e.button !== undefined && e.button !== 0) return; // ignore right/middle clicks
+                didLongPress   = false;
                 pressStartTime = Date.now();
                 ring.classList.add('active');
 
+                // Animates the SVG ring filling up as the user holds the button
                 function updateRing() {
-                    const elapsed = Date.now() - pressStartTime;
+                    const elapsed  = Date.now() - pressStartTime;
                     const progress = Math.min(elapsed / LONG_PRESS_MS, 1);
-                    const offset = RING_CIRCUMFERENCE * (1 - progress);
+                    const offset   = RING_CIRCUMFERENCE * (1 - progress);
                     ringCircle.style.strokeDashoffset = offset;
                     if (progress < 1) {
                         rafId = requestAnimationFrame(updateRing);
@@ -1209,12 +1380,12 @@
                 }
                 rafId = requestAnimationFrame(updateRing);
 
+                // After 600ms, treat it as a long press and turn the wallpaper off
                 pressTimer = setTimeout(() => {
                     didLongPress = true;
                     cancelAnimationFrame(rafId);
                     ringCircle.style.strokeDashoffset = 0;
-                  
-                    wallpaperStyleIndex = 0; 
+                    wallpaperStyleIndex = 0; // index 0 is the "Off" style
                     window.refreshWallpaper();
                     btn.classList.add('long-pressing');
                     setTimeout(() => btn.classList.remove('long-pressing'), 300);
@@ -1222,35 +1393,37 @@
                 }, LONG_PRESS_MS);
             }
 
+            // Called when the user releases or leaves the button — cleans up and resets the ring.
             function endPress() {
                 clearTimeout(pressTimer);
                 cancelAnimationFrame(rafId);
-                pressTimer = null;
+                pressTimer     = null;
                 pressStartTime = null;
-                
-                ringCircle.style.transition = 'stroke-dashoffset 0.2s ease';
-                ringCircle.style.strokeDashoffset = RING_CIRCUMFERENCE;
+                // Animate the ring fading back to empty
+                ringCircle.style.transition        = 'stroke-dashoffset 0.2s ease';
+                ringCircle.style.strokeDashoffset  = RING_CIRCUMFERENCE;
                 setTimeout(() => {
                     ring.classList.remove('active');
                     ringCircle.style.transition = 'stroke-dashoffset 0.05s linear';
                 }, 220);
             }
 
-            btn.addEventListener('mousedown', startPress);
+            // Attach press/release events for both mouse and touch
+            btn.addEventListener('mousedown',  startPress);
             btn.addEventListener('touchstart', e => { e.preventDefault(); startPress(e.touches[0]); }, { passive: false });
-
-            btn.addEventListener('mouseup', endPress);
+            btn.addEventListener('mouseup',    endPress);
             btn.addEventListener('mouseleave', endPress);
-            btn.addEventListener('touchend', endPress);
-            btn.addEventListener('touchcancel', endPress);
+            btn.addEventListener('touchend',   endPress);
+            btn.addEventListener('touchcancel',endPress);
 
+            // A short click (not a long press) just cycles to the next wallpaper style
             btn.addEventListener('click', (e) => {
-                if (didLongPress) { didLongPress = false; return; }
+                if (didLongPress) { didLongPress = false; return; } // ignore click that ended a long press
                 wallpaperStyleIndex = (wallpaperStyleIndex + 1) % WALLPAPER_STYLES.length;
                 window.refreshWallpaper();
             });
 
-           
+            // Apply the wallpaper on first load
             window.refreshWallpaper();
         }
     </script>
