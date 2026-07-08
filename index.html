@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <svg style="display:none" aria-hidden="true">
+    <svg id="iconSprite" style="display:none" aria-hidden="true">
         <symbol id="icon-dice-three" viewBox="0 0 32 32">
             <path d="M27.299 2.246h-22.65c-1.327 0-2.402 1.076-2.402 2.402v22.65c0 1.327 1.076 2.402 2.402 2.402h22.65c1.327 0 2.402-1.076 2.402-2.402v-22.65c0-1.327-1.076-2.402-2.402-2.402zM7.613 27.455c-1.723 0-3.12-1.397-3.12-3.12s1.397-3.12 3.12-3.12 3.12 1.397 3.12 3.12-1.397 3.12-3.12 3.12zM15.974 19.093c-1.723 0-3.12-1.397-3.12-3.12s1.397-3.12 3.12-3.12 3.12 1.397 3.12 3.12-1.397 3.12-3.12 3.12zM24.335 10.732c-1.723 0-3.12-1.397-3.12-3.12s1.397-3.12 3.12-3.12 3.12 1.397 3.12 3.12c-0 1.723-1.397 3.12-3.12 3.12z"></path>
         </symbol>
@@ -40,9 +40,20 @@
             </g>
             </g>
         </symbol>
+        <symbol id="icon-sound-on" viewBox="0 0 24 24">
+            <path d="M3,9 L8,9 L15,3 L15,21 L8,15 L3,15 Z"></path>
+            <path d="M17.3,7.6 C19.6,9.3 19.6,14.7 17.3,16.4 L18.5,17.9 C21.5,15.6 21.5,8.4 18.5,6.1 Z"></path>
+            <path d="M17.1,10.4 C17.9,11 17.9,13 17.1,13.6 L18.3,15.1 C19.9,13.9 19.9,10.1 18.3,8.9 Z"></path>
+        </symbol>
+        <symbol id="icon-sound-off" viewBox="0 0 24 24">
+            <path d="M3,9 L8,9 L15,3 L15,21 L8,15 L3,15 Z"></path>
+            <rect x="16.8" y="10.9" width="8" height="2.2" rx="1.1" transform="rotate(45 20.8 12)"></rect>
+            <rect x="16.8" y="10.9" width="8" height="2.2" rx="1.1" transform="rotate(-45 20.8 12)"></rect>
+        </symbol>
     </svg>
     <div class="wallpaper-layer" id="wallpaperLayer" aria-hidden="true"></div>
     <button class="mode-toggle" id="modeToggle" aria-label="Switch between light and dark mode" title="Switch theme">&#9818;</button>
+    <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound effects" aria-pressed="true" title="Toggle sound effects"><svg class="icon" aria-hidden="true"><use id="soundToggleIcon" href="#icon-sound-on"></use></svg></button>
 
     <div class="page">
         <div class="header-block">
@@ -57,22 +68,31 @@
         <div class="container">
             <div class="left-column">
                 <div class="settings-panel">
-                    <h2>Randomizer</h2>
+                    <h2>Randomizer
+                        <span class="info-tip" tabindex="0">
+                            <span class="info-tip-icon" aria-hidden="true">?</span>
+                            <span class="info-tip-text" role="tooltip">Turn categories on/off, set how many of each to roll, and pick which specific items are eligible. Hit "Hit Me!" to roll, then lock any card you want to keep before rerolling the rest.</span>
+                        </span>
+                    </h2>
 
                     <div class="setting-row active" id="row-themes">
                         <div class="setting-control">
                             <div class="control-left">
                                 <input type="number" id="numThemes" class="number-input" value="2" min="1" max="4">
                                 <label>Themes</label>
+                                <span class="info-tip" tabindex="0">
+                                    <span class="info-tip-icon" aria-hidden="true">?</span>
+                                    <span class="info-tip-text" role="tooltip">The subject or mood of the game — a setting, era, or vibe (e.g. "Pirates" or "a Cozy tone"). The number picks how many themes get rolled at once.</span>
+                                </span>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="toggle-themes" checked onchange="updateRowState('themes')">
+                                <input type="checkbox" id="toggle-themes" checked>
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <button class="pool-toggle" data-target="pool-wrapper-themes">[+] Show pool</button>
                         <div id="pool-wrapper-themes" class="pool-wrapper">
-                            <input type="text" class="pool-search" placeholder="Search themes..." oninput="filterPool(this)">
+                            <input type="text" id="search-themes" class="pool-search" placeholder="Search themes...">
                             <div id="pool-themes"></div>
                             <div class="pool-meta" id="pool-meta-themes"></div>
                         </div>
@@ -83,15 +103,19 @@
                             <div class="control-left">
                                 <input type="number" id="numMechanics" class="number-input" value="2" min="1" max="6">
                                 <label>Mechanics</label>
+                                <span class="info-tip" tabindex="0">
+                                    <span class="info-tip-icon" aria-hidden="true">?</span>
+                                    <span class="info-tip-text" role="tooltip">The gameplay systems your design should use (e.g. "Worker Placement" or "Hand Management"). The number picks how many mechanics get rolled at once.</span>
+                                </span>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="toggle-mechanics" checked onchange="updateRowState('mechanics')">
+                                <input type="checkbox" id="toggle-mechanics" checked>
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <button class="pool-toggle" data-target="pool-wrapper-mechanics">[+] Show pool</button>
                         <div id="pool-wrapper-mechanics" class="pool-wrapper">
-                            <input type="text" class="pool-search" placeholder="Search mechanics..." oninput="filterPool(this)">
+                            <input type="text" id="search-mechanics" class="pool-search" placeholder="Search mechanics...">
                             <div id="pool-mechanics"></div>
                             <div class="pool-meta" id="pool-meta-mechanics"></div>
                         </div>
@@ -102,32 +126,48 @@
                             <div class="control-left">
                                 <input type="number" id="numComponents" class="number-input" value="2" min="1" max="6">
                                 <label>Components</label>
+                                <span class="info-tip" tabindex="0">
+                                    <span class="info-tip-icon" aria-hidden="true">?</span>
+                                    <span class="info-tip-text" role="tooltip">Physical pieces or materials for the game (e.g. "a Deck of Cards" or "Wooden Cubes"). Each one is randomly assigned "using" or "without" as a design constraint.</span>
+                                </span>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="toggle-components" checked onchange="updateRowState('components')">
+                                <input type="checkbox" id="toggle-components" checked>
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <button class="pool-toggle" data-target="pool-wrapper-components">[+] Show pool</button>
                         <div id="pool-wrapper-components" class="pool-wrapper">
-                            <input type="text" class="pool-search" placeholder="Search components..." oninput="filterPool(this)">
+                            <input type="text" id="search-components" class="pool-search" placeholder="Search components...">
                             <div id="pool-components"></div>
                             <div class="pool-meta" id="pool-meta-components"></div>
                         </div>
                     </div>
+
+                    <button type="button" class="reset-pools-btn" id="resetPoolsBtn" title="Restore the built-in item lists and undo any custom additions or removals">Reset pools to defaults</button>
                 </div>
                 <div class="spin-error" id="spinError"></div>
-                <button class="btn-spin" id="spinBtn" onclick="startSpin()">Hit Me!</button>
+                <button class="btn-spin" id="spinBtn">Hit Me!</button>
             </div>
 
             <div class="randomizer-panel">
                 <div class="results-stack" id="resultsContainer"></div>
                 <div class="prompt-container" id="promptBox" style="display: none;">
                     <h3>
-                        <span>Generated Prompt</span>
-                        <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy prompt</button>
+                        <span>Generated Prompt
+                            <span class="info-tip" tabindex="0">
+                                <span class="info-tip-icon" aria-hidden="true">?</span>
+                                <span class="info-tip-text" role="tooltip">Every roll and reroll is saved here. Drag this card left or right (or use the ‹ › buttons / arrow keys) to revisit previous prompts — you can keep rerolling from any point in history.</span>
+                            </span>
+                        </span>
+                        <button class="copy-btn" id="copyBtn">Copy prompt</button>
                     </h3>
                     <div class="prompt-text" id="finalPrompt"></div>
+                    <div class="history-nav" id="historyNav">
+                        <button type="button" class="history-nav-btn" id="historyPrevBtn" aria-label="Previous prompt">‹</button>
+                        <span class="history-position" id="historyPosition"></span>
+                        <button type="button" class="history-nav-btn" id="historyNextBtn" aria-label="Next prompt">›</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -140,6 +180,14 @@
         <button class="wallpaper-style-btn" id="wallpaperStyleBtn" aria-label="Cycle background style" title="Cycle background style">&#9830;</button>
     </div>
 
-    <script src="js/app.js" defer></script>
+    <script src="js/data.js" defer></script>
+    <script src="js/pools.js" defer></script>
+    <script src="js/sound.js" defer></script>
+    <script src="js/icons.js" defer></script>
+    <script src="js/cards.js" defer></script>
+    <script src="js/prompt.js" defer></script>
+    <script src="js/persistence.js" defer></script>
+    <script src="js/theme.js" defer></script>
+    <script src="js/main.js" defer></script>
 </body>
 </html>
