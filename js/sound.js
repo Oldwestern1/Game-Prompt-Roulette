@@ -77,7 +77,10 @@
         function playTickSample() { playSample('audio/tick.wav', { gain: 0.85 }); }
 
         // The landing thud — a real recorded mechanical stop, played the instant the tick loop ends.
-        function playLandThud() { playSample('audio/land-thud.mp3', { gain: 0.9 }); }
+        // Gain is lower than you'd guess from the other samples' values because this source file is
+        // mastered much hotter (higher mean volume) than the others — 0.55 here lands at roughly the
+        // same perceived loudness as the other sample-based sounds, not quieter.
+        function playLandThud() { playSample('audio/land-thud.mp3', { gain: 0.55 }); }
 
         // ─── SHARED TICK LOOP ───────────────────────────────────────────────────────
         // Previously, every card played its own tick sound on its own random schedule — with several
@@ -121,7 +124,9 @@
             // crisper, more decisive click) and a slightly lower rate for "off" (a softer release).
             lockOn()     { playSample('audio/lock-click.mp3', { gain: 0.8, playbackRate: 1.08 }); },
             lockOff()    { playSample('audio/lock-click.mp3', { gain: 0.65, playbackRate: 0.85 }); },
-            copy()       { playSample('audio/copy-chime.mp3', { gain: 0.8 }); },
+            // The copy-chime source file is mastered very hot (peaks at 0dB) compared to the other
+            // samples, so it needs a much lower gain to land at a comparable perceived loudness.
+            copy()       { playSample('audio/copy-chime.mp3', { gain: 0.18 }); },
             addItem()    { playTone({ freq: 600, duration: 0.1, type: 'sine', gain: 0.18, glideTo: 900 }); },
             removeItem() { playTone({ freq: 680, duration: 0.1, type: 'sine', gain: 0.16, glideTo: 320 }); },
             whoosh()     { playSample('audio/whoosh.mp3', { gain: 0.7 }); },
