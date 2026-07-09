@@ -33,6 +33,22 @@
                     if (!svgEl) return;
                     const viewBox = svgEl.getAttribute('viewBox') || '0 0 24 24';
 
+                    // Design tools (Inkscape, Illustrator, etc.) often export non-rendering editor
+                    // metadata alongside the actual shapes — <defs>, namespaced elements like
+                    // <sodipodi:namedview>, and ids that are only meaningful inside that one file.
+                    // Multiple icons share this one sprite document, so leftover ids can collide across
+                    // files; strip all of that down to just the visible path/rect/etc. geometry.
+                    Array.from(svgEl.querySelectorAll('*')).forEach(el => {
+                        if (el.localName === 'defs' || el.localName === 'metadata' || (el.prefix && el.prefix !== 'svg')) {
+                            el.remove();
+                            return;
+                        }
+                        el.removeAttribute('id');
+                        Array.from(el.attributes).forEach(attr => {
+                            if (attr.name.includes(':') && attr.name !== 'xlink:href') el.removeAttribute(attr.name);
+                        });
+                    });
+
                     let symbol = document.getElementById(`icon-${name}`);
                     if (!symbol) {
                         symbol = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');

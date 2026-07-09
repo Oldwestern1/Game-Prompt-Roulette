@@ -13,13 +13,11 @@
                     if (ticks >= maxTicks) {
                         valueNode.textContent = categoryKey === 'components' ? (finalItemData.rule === 'use' ? 'Use ' : 'Without ') + finalItemData.name : finalItemData.name;
                         valueNode.style.opacity = '1';
-                        SoundFX.land();
                         resolve(); return;
                     }
                     const randomItem = pool[Math.floor(Math.random() * pool.length)];
                     const tempRule = Math.random() < 0.5 ? 'use' : 'without';
                     valueNode.textContent = categoryKey === 'components' ? (tempRule === 'use' ? 'Use ' : 'Without ') + randomItem : randomItem;
-                    SoundFX.tick();
                     delay *= 1.1; setTimeout(nextTick, delay);
                 }
                 nextTick();
@@ -134,7 +132,9 @@
             });
             if (isFullSpin) {
                 setAllRerollsDisabled(true);
+                SoundFX.startTickLoop();
                 await Promise.all(spinPromises);
+                SoundFX.stopTickLoopAndLand();
                 setAllRerollsDisabled(false);
             }
         }
@@ -151,7 +151,9 @@
 
             setAllRerollsDisabled(true);
             document.getElementById('spinBtn').disabled = true;
+            SoundFX.startTickLoop();
             await doRouletteSpin(cardElement.querySelector('.result-value'), pool, newItem, key);
+            SoundFX.stopTickLoopAndLand();
             setAllRerollsDisabled(false);
             updateSpinAvailability();
             generatePromptSentence();
