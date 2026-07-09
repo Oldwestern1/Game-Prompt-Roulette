@@ -1,12 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SOUND.JS — The synthesized sound-effect system (Web Audio oscillators, no audio files) and
-// the mute toggle in the top-right corner.
+// SOUND.JS — The sound-effect system (a mix of Web Audio oscillator tones and real recorded
+// samples) and the mute toggle in the top-right corner.
 // ═══════════════════════════════════════════════════════════════════════════
 
         // ─── SOUND SYSTEM ───────────────────────────────────────────────────────────
-        // Most sounds here are short synthesized tones (Web Audio oscillators). The one exception is
-        // the tick, which plays a real recorded click (audio/tick.wav) — a synthesized click didn't
-        // sound as good as an actual sample. The AudioContext is created lazily on first use, since
+        // A mix of short synthesized tones (Web Audio oscillators) and real recorded samples.
+        // Samples are used wherever a physical, textured sound reads better than a synthesized
+        // blip — the tick (audio/tick.wav), the landing thud (audio/land-thud.mp3), the lock
+        // click (audio/lock-click.mp3), the prompt-card whoosh (audio/whoosh.mp3), and the copy
+        // confirmation chime (audio/copy-chime.mp3). Everything else (dice tick, add/remove item,
+        // bump) stays a synthesized tone — they're minor, frequent micro-interactions where a
+        // quick pitched blip is enough. The AudioContext is created lazily on first use, since
         // browsers block audio until a user gesture anyway. Sound defaults on; the toggle in the
         // top-right corner mutes it and that preference is persisted like everything else.
         let audioCtx = null;
@@ -40,58 +44,40 @@
             osc.start(t0); osc.stop(t0 + duration + 0.02);
         }
 
-        // Lazily fetches and decodes the real click sample, caching the result so it's only
-        // fetched/decoded once no matter how many ticks play.
-        let tickBufferPromise = null;
-        function getTickBuffer(ctx) {
-            if (!tickBufferPromise) {
-                tickBufferPromise = fetch('audio/tick.wav')
+        // ─── SAMPLE PLAYBACK ────────────────────────────────────────────────────────
+        // Generic lazy-fetch-and-decode cache, shared by every real audio sample in the app
+        // (tick, land thud, lock click, whoosh, copy chime). Each URL is only ever fetched/decoded
+        // once no matter how many times it's played — subsequent calls reuse the same decoded buffer.
+        const sampleBufferPromises = {};
+        function getSampleBuffer(ctx, url) {
+            if (!sampleBufferPromises[url]) {
+                sampleBufferPromises[url] = fetch(url)
                     .then(res => res.arrayBuffer())
-                    .then(bytes => ctx.decodeAudioData(bytes));
+                    .then(bytes => ctx.decodeAudioData(bytes))
+                    .catch(e => { delete sampleBufferPromises[url]; throw e; }); // allow a retry later on transient failure
             }
-            return tickBufferPromise;
+            return sampleBufferPromises[url];
         }
 
-        // Plays the real click sample once.
-        async function playTickSample() {
+        // Plays a real audio sample once. `playbackRate` lets one file serve slightly different
+        // roles (e.g. a lock click at a lower rate for "unlock" vs. its normal rate for "lock").
+        async function playSample(url, { gain = 0.85, playbackRate = 1 } = {}) {
             const ctx = ensureAudioCtx();
             if (!ctx) return;
             try {
-                const buffer = await getTickBuffer(ctx);
-                const src = ctx.createBufferSource(); src.buffer = buffer;
-                const gain = ctx.createGain(); gain.gain.value = 0.85;
-                src.connect(gain); gain.connect(ctx.destination);
+                const buffer = await getSampleBuffer(ctx, url);
+                const src = ctx.createBufferSource(); src.buffer = buffer; src.playbackRate.value = playbackRate;
+                const gainNode = ctx.createGain(); gainNode.gain.value = gain;
+                src.connect(gainNode); gainNode.connect(ctx.destination);
                 src.start();
             } catch (e) { /* fetch blocked (e.g. file:// origin) or decode failed — silently skip */ }
         }
 
-        // A punchy, louder landing thud — layers a low body (the actual "thud") with a very short
-        // higher-pitched attack transient on top. Pure low-frequency tones read as quiet-to-inaudible
-        // on small/laptop speakers even at high gain, since bass is both perceptually weaker and
-        // physically harder for small drivers to reproduce; the short high layer gives it presence
-        // and an attack so it actually cuts through, regardless of speaker.
-        function playLandThud() {
-            const ctx = ensureAudioCtx();
-            if (!ctx) return;
-            const t0 = ctx.currentTime;
-            const body = ctx.createOscillator(); const bodyGain = ctx.createGain();
-            body.type = 'sine';
-            body.frequency.setValueAtTime(210, t0);
-            body.frequency.exponentialRampToValueAtTime(85, t0 + 0.22);
-            bodyGain.gain.setValueAtTime(0, t0);
-            bodyGain.gain.linearRampToValueAtTime(0.6, t0 + 0.008);
-            bodyGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
-            body.connect(bodyGain); bodyGain.connect(ctx.destination);
-            body.start(t0); body.stop(t0 + 0.32);
+        // Plays the real click sample once (the roulette tick).
+        function playTickSample() { playSample('audio/tick.wav', { gain: 0.85 }); }
 
-            const attack = ctx.createOscillator(); const attackGain = ctx.createGain();
-            attack.type = 'triangle'; attack.frequency.setValueAtTime(650, t0);
-            attackGain.gain.setValueAtTime(0, t0);
-            attackGain.gain.linearRampToValueAtTime(0.3, t0 + 0.004);
-            attackGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
-            attack.connect(attackGain); attackGain.connect(ctx.destination);
-            attack.start(t0); attack.stop(t0 + 0.06);
-        }
+        // The landing thud — a real recorded mechanical stop, played the instant the tick loop ends.
+        function playLandThud() { playSample('audio/land-thud.mp3', { gain: 0.9 }); }
 
         // ─── SHARED TICK LOOP ───────────────────────────────────────────────────────
         // Previously, every card played its own tick sound on its own random schedule — with several
@@ -131,12 +117,14 @@
             startTickLoop,
             stopTickLoopAndLand,
             diceTick()   { playTone({ freq: 220 + Math.random() * 60, duration: 0.03, type: 'triangle', gain: 0.06 }); },
-            lockOn()     { playTone({ freq: 600, duration: 0.06, type: 'sine', gain: 0.1, glideTo: 460 }); },
-            lockOff()    { playTone({ freq: 460, duration: 0.05, type: 'sine', gain: 0.08, glideTo: 620 }); },
-            copy()       { playTone({ freq: 880, duration: 0.08, type: 'sine', gain: 0.11 }); playTone({ freq: 1180, duration: 0.09, type: 'sine', gain: 0.09, delay: 0.05 }); },
+            // Same lock-click sample for both states, played at a slightly higher rate for "on" (a
+            // crisper, more decisive click) and a slightly lower rate for "off" (a softer release).
+            lockOn()     { playSample('audio/lock-click.mp3', { gain: 0.8, playbackRate: 1.08 }); },
+            lockOff()    { playSample('audio/lock-click.mp3', { gain: 0.65, playbackRate: 0.85 }); },
+            copy()       { playSample('audio/copy-chime.mp3', { gain: 0.8 }); },
             addItem()    { playTone({ freq: 500, duration: 0.07, type: 'sine', gain: 0.09, glideTo: 760 }); },
             removeItem() { playTone({ freq: 620, duration: 0.07, type: 'sine', gain: 0.07, glideTo: 340 }); },
-            whoosh()     { playTone({ freq: 320, duration: 0.13, type: 'sawtooth', gain: 0.045, glideTo: 130 }); },
+            whoosh()     { playSample('audio/whoosh.mp3', { gain: 0.7 }); },
             bump()       { playTone({ freq: 140, duration: 0.06, type: 'sine', gain: 0.08 }); },
         };
 
