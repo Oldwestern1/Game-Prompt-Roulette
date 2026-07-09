@@ -8,14 +8,19 @@
         // prompt history — is saved to localStorage after each action, and restored on load, so a
         // refresh (or closing the tab) doesn't lose where you were.
         const STORAGE_KEY = 'gamePromptRoulette.state.v1';
+        const STATE_VERSION = 1; // bump this whenever the shape of the saved state object changes
 
         // Reads and parses the persisted state. Returns null if there's nothing saved, storage is
-        // unavailable (e.g. private browsing in some browsers), or the saved data is corrupt —
-        // callers should fall back to defaults in any of those cases.
+        // unavailable (e.g. private browsing in some browsers), the saved data is corrupt, or it was
+        // written by a different schema version — callers should fall back to defaults in any of
+        // those cases rather than risk applying a mismatched shape.
         function loadPersistedState() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
-                return raw ? JSON.parse(raw) : null;
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || parsed.version !== STATE_VERSION) return null;
+                return parsed;
             } catch (e) { return null; }
         }
 
@@ -32,7 +37,7 @@
                 const uncheckedPlain = {};
                 sectionKeys.forEach(k => { uncheckedPlain[k] = Array.from(uncheckedItems[k]); });
                 const state = {
-                    version: 1,
+                    version: STATE_VERSION,
                     masterData, uncheckedItems: uncheckedPlain,
                     enabledSections, counts,
                     currentResults, lockedState,

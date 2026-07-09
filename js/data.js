@@ -9,14 +9,14 @@
         // If a rolled theme matches one of these keys, the question gets appended to the generated prompt.
         const SCAMPER = {
     "Substitute": (m1, m2) => m1 === m2
-        ? `How could you <span class="highlight">substitute</span> something from the ${m1} mechanic?`
-        : `How could you <span class="highlight">substitute</span> something from the ${m1} or ${m2} mechanics?`,
-    "Combine": (m1, m2) => `How could you <span class="highlight">combine</span> the ${m1} mechanic with something else?`,
-    "Adapt": (m1, m2) => `What part could you <span class="highlight">adapt</span> from ${m1} in a different way?`,
-    "Modify": (m1, m2) => `How could you <span class="highlight">modify</span>, magnify, or minify ${m1}?`,
-    "Put to another use": (m1, m2) => `How could you <span class="highlight">put</span> the components or rules of ${m1} <span class="highlight">to another use</span>?`,
-    "Eliminate": (m1, m2) => `What happens if you <span class="highlight">eliminate</span> a standard rule or requirement from ${m1}?`,
-    "Reverse": (m1, m2) => `How could you <span class="highlight">reverse</span> the ${m1} mechanic?`
+        ? `How could you <span class="highlight">substitute</span> something from the ${escapeHTML(m1)} mechanic?`
+        : `How could you <span class="highlight">substitute</span> something from the ${escapeHTML(m1)} or ${escapeHTML(m2)} mechanics?`,
+    "Combine": (m1, m2) => `How could you <span class="highlight">combine</span> the ${escapeHTML(m1)} mechanic with something else?`,
+    "Adapt": (m1, m2) => `What part could you <span class="highlight">adapt</span> from ${escapeHTML(m1)} in a different way?`,
+    "Modify": (m1, m2) => `How could you <span class="highlight">modify</span>, magnify, or minify ${escapeHTML(m1)}?`,
+    "Put to another use": (m1, m2) => `How could you <span class="highlight">put</span> the components or rules of ${escapeHTML(m1)} <span class="highlight">to another use</span>?`,
+    "Eliminate": (m1, m2) => `What happens if you <span class="highlight">eliminate</span> a standard rule or requirement from ${escapeHTML(m1)}?`,
+    "Reverse": (m1, m2) => `How could you <span class="highlight">reverse</span> the ${escapeHTML(m1)} mechanic?`
 };
 
         // VIBES_SET: themes that describe a tone or feeling rather than a subject.

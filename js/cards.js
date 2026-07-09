@@ -175,9 +175,21 @@
             });
         }
 
+        // Escapes the characters that matter for safely inserting text into innerHTML — necessary
+        // because item names can come from user-typed custom pool items (see addPoolItem in pools.js),
+        // not just the built-in lists, and generatePromptSentence() assembles its output via innerHTML.
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // Wraps a name in a highlight span so it appears in the accent colour in the prompt.
         function h(name) {
-    return `<span class="highlight">${name}</span>`;
+    return `<span class="highlight">${escapeHTML(name)}</span>`;
 }
 
         // Joins a list of strings naturally: "A", "A and B", "A, B, and C".
@@ -204,12 +216,15 @@
                     if (i < prevResults.length && prevLocks[i]) { newResults[key].push(prevResults[i]); }
                     else {
                         const pickedName = getRandomItemWithoutDupes(pool, newResults[key]);
-                        if (pickedName === null) return;
+                        if (pickedName === null) break; // pool ran dry mid-loop — stop adding for this key, but still sync lockedState below
                         const newItem = { name: pickedName };
                         if (key === 'components') newItem.rule = Math.random() < 0.5 ? 'use' : 'without';
                         newResults[key].push(newItem);
                     }
                 }
+                // Always keep lockedState in sync with however many items newResults[key] actually ended
+                // up with, even if the loop above broke early — otherwise a stale, mismatched-length
+                // lock array can survive from the previous roll (see bug notes).
                 lockedState[key] = newResults[key].map((_, i) => i < prevResults.length ? !!prevLocks[i] : false);
             });
             currentResults = newResults; await renderAllCards(true); generatePromptSentence(); pushHistorySnapshot(); saveState(); btn.disabled = false; updateSpinAvailability();

@@ -26,7 +26,6 @@
             await refreshIconSprite();
             const saved = loadPersistedState();
             if (saved) { applyPersistedState(saved); } else { buildPoolPickers(); }
-            updateSpinAvailability();
             initStaticControls();
             initWallpaperSystem();
             initThemeToggle();

@@ -39,7 +39,7 @@
                     catCheck.setAttribute('aria-label', `Toggle all items in ${category}`);
                     catCheck.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        if (catCheck.classList.contains('indeterminate')) {
+                        if (catCheck.indeterminate) {
                             e.preventDefault();
                             setCategoryChecked(key, category, true);
                         }
