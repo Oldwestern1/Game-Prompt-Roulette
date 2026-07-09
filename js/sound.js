@@ -126,7 +126,7 @@
             lockOff()    { playSample('audio/lock-click.mp3', { gain: 0.65, playbackRate: 0.85 }); },
             // The copy-chime source file is mastered very hot (peaks at 0dB) compared to the other
             // samples, so it needs a much lower gain to land at a comparable perceived loudness.
-            copy()       { playSample('audio/copy-chime.mp3', { gain: 0.18 }); },
+            copy()       { playSample('audio/copy-chime.mp3', { gain: 0.1 }); },
             addItem()    { playTone({ freq: 600, duration: 0.1, type: 'sine', gain: 0.18, glideTo: 900 }); },
             removeItem() { playTone({ freq: 680, duration: 0.1, type: 'sine', gain: 0.16, glideTo: 320 }); },
             whoosh()     { playSample('audio/whoosh.mp3', { gain: 0.7 }); },
