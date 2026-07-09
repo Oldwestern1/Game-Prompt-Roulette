@@ -122,10 +122,17 @@
             lockOn()     { playSample('audio/lock-click.mp3', { gain: 0.8, playbackRate: 1.08 }); },
             lockOff()    { playSample('audio/lock-click.mp3', { gain: 0.65, playbackRate: 0.85 }); },
             copy()       { playSample('audio/copy-chime.mp3', { gain: 0.8 }); },
-            addItem()    { playTone({ freq: 500, duration: 0.07, type: 'sine', gain: 0.09, glideTo: 760 }); },
-            removeItem() { playTone({ freq: 620, duration: 0.07, type: 'sine', gain: 0.07, glideTo: 340 }); },
+            addItem()    { playTone({ freq: 600, duration: 0.1, type: 'sine', gain: 0.18, glideTo: 900 }); },
+            removeItem() { playTone({ freq: 680, duration: 0.1, type: 'sine', gain: 0.16, glideTo: 320 }); },
             whoosh()     { playSample('audio/whoosh.mp3', { gain: 0.7 }); },
-            bump()       { playTone({ freq: 140, duration: 0.06, type: 'sine', gain: 0.08 }); },
+            // A low body tone plus a very short higher-pitched attack layered on top — pure low
+            // tones read as quiet-to-inaudible on small/laptop speakers even at high gain, so the
+            // attack layer gives it presence and punch regardless of speaker (same fix originally
+            // used for the old synthesized landing thud).
+            bump() {
+                playTone({ freq: 150, duration: 0.09, type: 'sine', gain: 0.22 });
+                playTone({ freq: 520, duration: 0.03, type: 'triangle', gain: 0.13 });
+            },
         };
 
         // Wires up the top-right sound toggle: restores the persisted preference, updates its
