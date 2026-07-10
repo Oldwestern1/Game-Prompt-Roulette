@@ -135,12 +135,12 @@
             // and a slightly lower rate for the "negative" one (remove/deselect), same trick as lockOn/lockOff.
             addItem()    { playSample('audio/button-press.mp3', { gain: 0.8, playbackRate: 1.1 }); },
             removeItem() { playSample('audio/button-press.mp3', { gain: 0.7, playbackRate: 0.85 }); },
-            whoosh()     { playSample('audio/whoosh.mp3', { gain: 0.7 }); },
+            whoosh()     { playSample('audio/whoosh.mp3', { gain: 1.0 }); },
             // A low body tone plus a very short higher-pitched attack layered on top — pure low
             // tones read as quiet-to-inaudible on small/laptop speakers even at high gain, so the
             // attack layer gives it presence and punch regardless of speaker (same fix originally
             // used for the old synthesized landing thud).
-            error()      { playSample('audio/error.mp3', { gain: 0.3 }); },
+            error()      { playSample('audio/error.mp3', { gain: 0.15 }); },
             bump()       { SoundFX.error(); },
             // Section toggle switches — same button-press sample as add/remove item, same
             // higher/lower playbackRate convention for on vs. off.
