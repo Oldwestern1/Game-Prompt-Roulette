@@ -4,6 +4,35 @@
 // "Hit Me!" spin orchestration.
 // ═══════════════════════════════════════════════════════════════════════════
 
+        // Builds the display text for a card's value — just the item name for themes/mechanics,
+        // or "Use X" / "Without X" for components.
+        function cardDisplayText(categoryKey, item) {
+            return categoryKey === 'components' ? (item.rule === 'use' ? `Use ${item.name}` : `Without ${item.name}`) : item.name;
+        }
+
+        // Sets a card's value node content. For mechanics with a known BoardGameGeek page
+        // (MECHANIC_LINKS, built-in mechanics only — custom items just render as plain text),
+        // wraps the name in a real link so people can learn more. A plain click on the link does
+        // nothing (so it can't accidentally navigate away from an in-progress roll); Ctrl/Cmd+click
+        // (or a middle-click) opens it in a new tab, using the browser's own default behaviour.
+        function setCardValueContent(valueNode, categoryKey, item) {
+            const text = cardDisplayText(categoryKey, item);
+            const url = categoryKey === 'mechanics' ? MECHANIC_LINKS[item.name] : null;
+            if (!url) { valueNode.textContent = text; return; }
+            valueNode.innerHTML = '';
+            const link = document.createElement('a');
+            link.href = url;
+            link.className = 'mechanic-link';
+            link.textContent = text;
+            link.title = 'Learn more on BoardGameGeek — Ctrl/Cmd+click (or Ctrl+Enter) to open';
+            link.setAttribute('aria-label', `Learn more about ${item.name} on BoardGameGeek (Ctrl or Cmd+click, or Ctrl+Enter, to open in a new tab)`);
+            link.addEventListener('click', e => {
+                if (!(e.ctrlKey || e.metaKey || e.button === 1)) e.preventDefault();
+                e.stopPropagation();
+            });
+            valueNode.appendChild(link);
+        }
+
         function doRouletteSpin(valueNode, pool, finalItemData, categoryKey) {
             return new Promise(resolve => {
                 let ticks = 0; const maxTicks = 20 + Math.floor(Math.random() * 10); let delay = 15;
@@ -11,7 +40,7 @@
                 function nextTick() {
                     ticks++;
                     if (ticks >= maxTicks) {
-                        valueNode.textContent = categoryKey === 'components' ? (finalItemData.rule === 'use' ? 'Use ' : 'Without ') + finalItemData.name : finalItemData.name;
+                        setCardValueContent(valueNode, categoryKey, finalItemData);
                         valueNode.style.opacity = '1';
                         resolve(); return;
                     }
@@ -46,7 +75,7 @@
             const titleNode = document.createElement('div'); titleNode.className = 'result-title'; titleNode.textContent = title;
             const valueNode = document.createElement('div'); valueNode.className = 'result-value';
             if (isSpinning) { valueNode.textContent = '...'; }
-            else { valueNode.textContent = categoryKey === 'components' ? (item.rule === 'use' ? `Use ${item.name}` : `Without ${item.name}`) : item.name; }
+            else { setCardValueContent(valueNode, categoryKey, item); }
             info.appendChild(titleNode); info.appendChild(valueNode); card.appendChild(info);
 
             const watermark = document.createElement('span');
@@ -124,7 +153,7 @@
                         if (card) {
                             const valueNode = card.querySelector('.result-value');
                             if (isFullSpin && !lockedState[key][i]) { spinPromises.push(doRouletteSpin(valueNode, pool, item, key)); }
-                            else { valueNode.textContent = key === 'components' ? (item.rule === 'use' ? 'Use ' : 'Without ') + item.name : item.name; }
+                            else { setCardValueContent(valueNode, key, item); }
                         }
                         index++;
                     });
