@@ -222,9 +222,9 @@
         .card-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         .result-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.2rem; }
         .result-value { font-size: 1.2rem; font-weight: bold; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
-        /* Mechanic names linked out to their BoardGameGeek page — inherits the card's normal text
-           styling so it doesn't look like a generic web link, with just a dotted underline as a subtle
-           "this is clickable" cue, and the accent colour on hover/focus. */
+        /* Mechanic/theme/component names linked out to "learn more" — inherits the card's normal
+           text styling so it doesn't look like a generic web link, with just a dotted underline as a
+           subtle "this is clickable" cue, and the accent colour on hover/focus. */
         .result-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--text-muted); cursor: pointer; }
         .result-link:hover, .result-link:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
         .result-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
