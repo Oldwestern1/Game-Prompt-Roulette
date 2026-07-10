@@ -10,27 +10,29 @@
             return categoryKey === 'components' ? (item.rule === 'use' ? `Use ${item.name}` : `Without ${item.name}`) : item.name;
         }
 
-        // Sets a card's value node content. For mechanics with a known BoardGameGeek page
-        // (MECHANIC_LINKS, built-in mechanics only — custom items just render as plain text),
-        // wraps the name in a real link so people can learn more. A plain click on the link does
-        // nothing (so it can't accidentally navigate away from an in-progress roll); Ctrl/Cmd+click
-        // (or a middle-click) opens it in a new tab, using the browser's own default behaviour.
+        // Sets a card's value node content. Every category can link out to "learn more" now —
+        // mechanics to their BoardGameGeek page when one is curated (MECHANIC_LINKS), everything
+        // else (and any mechanic without a curated entry) to a Wikipedia search — via getLinkFor()
+        // in data.js. Mood/vocabulary words and custom items with no sensible search target get no
+        // link and just render as plain text. A plain click on the link does nothing (so it can't
+        // accidentally navigate away from an in-progress roll); Ctrl/Cmd+click (or a middle-click)
+        // opens it in a new tab, using the browser's own default behaviour.
         function setCardValueContent(valueNode, categoryKey, item) {
             const text = cardDisplayText(categoryKey, item);
-            const url = categoryKey === 'mechanics' ? MECHANIC_LINKS[item.name] : null;
-            if (!url) { valueNode.textContent = text; return; }
+            const link = getLinkFor(categoryKey, item.name);
+            if (!link) { valueNode.textContent = text; return; }
             valueNode.innerHTML = '';
-            const link = document.createElement('a');
-            link.href = url;
-            link.className = 'mechanic-link';
-            link.textContent = text;
-            link.title = 'Learn more on BoardGameGeek — Ctrl/Cmd+click (or Ctrl+Enter) to open';
-            link.setAttribute('aria-label', `Learn more about ${item.name} on BoardGameGeek (Ctrl or Cmd+click, or Ctrl+Enter, to open in a new tab)`);
-            link.addEventListener('click', e => {
+            const linkEl = document.createElement('a');
+            linkEl.href = link.url;
+            linkEl.className = 'result-link';
+            linkEl.textContent = text;
+            linkEl.title = `Learn more on ${link.source} — Ctrl/Cmd+click (or Ctrl+Enter) to open`;
+            linkEl.setAttribute('aria-label', `Learn more about ${item.name} on ${link.source} (Ctrl or Cmd+click, or Ctrl+Enter, to open in a new tab)`);
+            linkEl.addEventListener('click', e => {
                 if (!(e.ctrlKey || e.metaKey || e.button === 1)) e.preventDefault();
                 e.stopPropagation();
             });
-            valueNode.appendChild(link);
+            valueNode.appendChild(linkEl);
         }
 
         function doRouletteSpin(valueNode, pool, finalItemData, categoryKey) {

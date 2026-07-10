@@ -19,20 +19,29 @@
     "Reverse": (m1, m2) => `How could you <span class="highlight">reverse</span> the ${escapeHTML(m1)} mechanic?`
 };
 
-        // MECHANIC_LINKS: maps each built-in mechanic name to its BoardGameGeek mechanic
-        // page, so results cards can link out to "learn more" (see cards.js). Only covers the
-        // default/built-in mechanics — custom items a person adds themselves simply won't have
-        // an entry here, and render as plain text with no link.
+        // MECHANIC_LINKS: maps each built-in mechanic name to its BoardGameGeek page, so results
+        // cards can link out to "learn more" (see cards.js / getLinkFor in this file). Mechanics
+        // without an entry here — including any custom mechanic a person adds themselves — fall
+        // back to a Wikipedia search instead of going unlinked (see getLinkFor).
         //
         // A few names differ slightly from BGG's official mechanic title, either because this
         // app's list predates a BGG rename, or because several similar app items ("Bag Building" /
         // "Deck Building" / "Pool Building" / "Dice Building") all map to BGG's single combined
-        // "Deck, Bag, and Pool Building" mechanic. A handful of app items (Engine Building, Tableau
-        // Building, Roll and Write, Drawing Card/Tile, Closed Economy, Follow the Leader, Shared
-        // Incentive / Market Decay, and the umbrella "Asymmetric Information / Limited
-        // Communication") have no confident single BGG mechanic page match (some, like Engine
-        // Building, are deliberately not an official BGG mechanic tag at all) and are intentionally
-        // left out rather than linked to something wrong.
+        // "Deck, Bag, and Pool Building" mechanic. Three more (Tableau Building, Roll and Write,
+        // Closed Economy) point to a BGG "Mechanism:" *family* page rather than an official
+        // "boardgamemechanic" page — BGG's community uses these terms constantly but never
+        // formalized them as mechanic tags, so the family page (a community-curated list of games
+        // using that mechanism, with a definition) is the closest real BGG resource that exists.
+        // Closed Economy in particular is an approximate match: it points to BGG's narrower
+        // "Closed-Economy Auction" mechanic page (an auction-specific meta-mechanism), since BGG has
+        // no page for the broader "money never enters/leaves the game" concept this app means.
+        //
+        // A remaining few (Engine Building, Drawing Card/Tile, Follow the Leader, Shared Incentive /
+        // Market Decay, and the umbrella "Asymmetric Information / Limited Communication") have no
+        // BGG mechanic page *or* family page with a confident single match — Engine Building in
+        // particular is deliberately not an official BGG tag at all (BGG's community has debated
+        // adding it for years; see the forum threads). These are intentionally left out rather than
+        // linked to something wrong, and fall back to a Wikipedia search like any other mechanic.
         const MECHANIC_LINKS = {
             "Acting": "https://boardgamegeek.com/boardgamemechanic/2073/acting",
             "Action / Event": "https://boardgamegeek.com/boardgamemechanic/2840/action-event",
@@ -71,6 +80,7 @@
             "Chaining": "https://boardgamegeek.com/boardgamemechanic/2956/chaining",
             "Chit-Pull System": "https://boardgamegeek.com/boardgamemechanic/2057/chit-pull-system",
             "Closed Drafting": "https://boardgamegeek.com/boardgamemechanic/2984/closed-drafting",
+            "Closed Economy": "https://boardgamegeek.com/boardgamemechanic/2928/closed-economy-auction",
             "Command Cards": "https://boardgamegeek.com/boardgamemechanic/2841/command-cards",
             "Commodity Speculation": "https://boardgamegeek.com/boardgamemechanic/2013/commodity-speculation",
             "Communication Limits": "https://boardgamegeek.com/boardgamemechanic/2893/communication-limits",
@@ -180,6 +190,7 @@
             "Retirement": "https://boardgamegeek.com/boardgamemechanic/3141/retirement",
             "Rock-Paper-Scissors": "https://boardgamegeek.com/boardgamemechanic/2003/rock-paper-scissors",
             "Roll / Spin and Move": "https://boardgamegeek.com/boardgamemechanic/2035/roll-spin-and-move",
+            "Roll and Write": "https://boardgamegeek.com/boardgamefamily/41222/mechanism-roll-and-write",
             "Rondel": "https://boardgamegeek.com/boardgamemechanic/2813/rondel",
             "Scenario / Mission / Campaign Game": "https://boardgamegeek.com/boardgamemechanic/2822/scenario-mission-campaign-game",
             "Score-and-Reset Game": "https://boardgamegeek.com/boardgamemechanic/2823/score-and-reset-game",
@@ -204,6 +215,7 @@
             "Sudden Death Ending": "https://boardgamegeek.com/boardgamemechanic/2884/sudden-death-ending",
             "Tag Matching": "https://boardgamegeek.com/boardgamemechanic/3100/tags",
             "Take That": "https://boardgamegeek.com/boardgamemechanic/2686/take-that",
+            "Tableau Building": "https://boardgamegeek.com/boardgamefamily/27646/mechanism-tableau-building",
             "Targeted Clues": "https://boardgamegeek.com/boardgamemechanic/2866/targeted-clues",
             "Team-Based Game": "https://boardgamegeek.com/boardgamemechanic/2019/team-based-game",
             "Tech Trees / Tracks": "https://boardgamegeek.com/boardgamemechanic/2849/tech-trees-tech-tracks",
@@ -249,6 +261,83 @@
             'Blandishment','Ephemeral','Labyrinthine','Quixotic','Halcyon',
             'Ineffable','Mellifluous','Sonder',
         ]);
+
+        // ─── RESULT-CARD LINKS ──────────────────────────────────────────────────────
+        // LINK_MAPS: per-category maps of hand-picked "learn more" URLs, keyed by item name.
+        // Only "mechanics" has one (MECHANIC_LINKS, above) — BGG's mechanic pages are a single,
+        // reliable, one-to-one source. Themes and components have no equivalent authoritative
+        // source, so those two are left empty and always fall through to the Wikipedia search
+        // fallback in getLinkFor() below. Add entries here any time you want a specific item to
+        // point somewhere better than the auto-generated guess.
+        const LINK_MAPS = { mechanics: MECHANIC_LINKS, themes: {}, components: {} };
+
+        // Finds which named group inside a masterData category an item belongs to (e.g. "Word
+        // Inspiration" inside themes) by searching the live masterData — including any custom items
+        // a person has added, since those live in the same group array as the built-ins. Returns
+        // null if the item can't be found in any group.
+        function getGroupFor(categoryKey, itemName) {
+            const groups = masterData[categoryKey];
+            if (!groups) return null;
+            for (const groupName of Object.keys(groups)) {
+                if (groups[groupName].includes(itemName)) return groupName;
+            }
+            return null;
+        }
+
+        // Strips a leading count/article word ("18 ", "a ", "Two ") from an item name before it's
+        // used as a search query, so "18 Cards" and "a Deck of Cards" search for their actual
+        // subject ("Cards" / "Deck of Cards") instead of being thrown at Wikipedia verbatim.
+        const LEADING_COUNT_WORD = /^(\d+|a|an|the|one|two|three|four|five|six|seven|eight|nine|ten)\s+/i;
+        function normalizeForSearch(name) {
+            let out = name, prev;
+            do { prev = out; out = out.replace(LEADING_COUNT_WORD, ''); } while (out !== prev);
+            return out.trim() || name; // never search for an empty string
+        }
+
+        // Builds a Wikipedia "I'm feeling lucky" search URL: jumps straight to the article when
+        // there's a confident title match, otherwise shows a normal search-results page. Used
+        // instead of guessing an article slug directly (e.g. `/wiki/${name}`), since plenty of item
+        // names don't exactly match a Wikipedia title (plurals, disambiguation, multi-word phrases)
+        // — a search is far more forgiving and never links to a dead page.
+        function wikipediaSearchLink(name) {
+            const query = normalizeForSearch(name);
+            return `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&title=Special:Search&go=Go`;
+        }
+
+        // Builds a direct Merriam-Webster lookup for a single vocabulary word. Unlike theme/component
+        // names, single dictionary words map onto a URL slug reliably (lowercase, no punctuation), so
+        // this is a direct link rather than a search — it's used for the built-in INSPIRATION_SET
+        // words and for anything a person adds to the "Word Inspiration" group themselves.
+        function dictionaryLink(name) {
+            return `https://www.merriam-webster.com/dictionary/${encodeURIComponent(name.trim().toLowerCase())}`;
+        }
+
+        // Resolves the "learn more" link for a result card, if any:
+        //   1. A hand-picked URL in LINK_MAPS always wins when one exists (currently mechanics only).
+        //   2. Themes in the "Vibes" group (Cozy, Grim, ...) get no link — they're moods, not subjects.
+        //   3. Themes in the "Word Inspiration" group get a dictionary link instead of Wikipedia — UNLESS
+        //      the name is a SCAMPER prompt verb (Combine, Reverse, ...), which gets no link, since
+        //      "look up the dictionary definition of Combine" isn't useful the way it is for Redolent
+        //      or Sonder.
+        //   4. Everything else falls back to a Wikipedia search.
+        // Applies to every item including custom ones typed into the "Add an item…" box — group
+        // membership is read live from masterData, so a custom word added to "Word Inspiration" gets
+        // a dictionary link automatically, without needing its own curated entry.
+        function getLinkFor(categoryKey, itemName) {
+            const curated = LINK_MAPS[categoryKey] && LINK_MAPS[categoryKey][itemName];
+            if (curated) return { url: curated, source: 'BoardGameGeek' };
+
+            if (categoryKey === 'themes') {
+                const group = getGroupFor('themes', itemName);
+                if (group === 'Vibes') return null;
+                if (group === 'Word Inspiration') {
+                    const isScamperVerb = Object.keys(SCAMPER).some(k => k.toLowerCase() === itemName.toLowerCase());
+                    if (isScamperVerb) return null;
+                    return { url: dictionaryLink(itemName), source: 'Merriam-Webster' };
+                }
+            }
+            return { url: wikipediaSearchLink(itemName), source: 'Wikipedia' };
+        }
 
         // masterData: the full pool of options for each category.
         // Organised into named groups (e.g. "Cards & Drafting") purely for display in the pool picker.
