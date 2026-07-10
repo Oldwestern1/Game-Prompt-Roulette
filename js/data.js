@@ -27,21 +27,22 @@
         // A few names differ slightly from BGG's official mechanic title, either because this
         // app's list predates a BGG rename, or because several similar app items ("Bag Building" /
         // "Deck Building" / "Pool Building" / "Dice Building") all map to BGG's single combined
-        // "Deck, Bag, and Pool Building" mechanic. Three more (Tableau Building, Roll and Write,
-        // Closed Economy) point to a BGG "Mechanism:" *family* page rather than an official
-        // "boardgamemechanic" page — BGG's community uses these terms constantly but never
-        // formalized them as mechanic tags, so the family page (a community-curated list of games
-        // using that mechanism, with a definition) is the closest real BGG resource that exists.
-        // Closed Economy in particular is an approximate match: it points to BGG's narrower
-        // "Closed-Economy Auction" mechanic page (an auction-specific meta-mechanism), since BGG has
-        // no page for the broader "money never enters/leaves the game" concept this app means.
+        // "Deck, Bag, and Pool Building" mechanic. Two more (Tableau Building, Roll and Write) point
+        // to a BGG "Mechanism:" *family* page rather than an official "boardgamemechanic" page —
+        // BGG's community uses these terms constantly but never formalized them as mechanic tags, so
+        // the family page (a community-curated list of games using that mechanism, with a definition)
+        // is the closest real BGG resource that exists. Closed Economy is an approximate match instead:
+        // it points to BGG's narrower "Closed-Economy Auction" *mechanic* page (an auction-specific
+        // meta-mechanism), since BGG has no page for the broader "money never enters/leaves the game"
+        // concept this app means.
         //
         // A remaining few (Engine Building, Drawing Card/Tile, Follow the Leader, Shared Incentive /
         // Market Decay, and the umbrella "Asymmetric Information / Limited Communication") have no
         // BGG mechanic page *or* family page with a confident single match — Engine Building in
         // particular is deliberately not an official BGG tag at all (BGG's community has debated
         // adding it for years; see the forum threads). These are intentionally left out rather than
-        // linked to something wrong, and fall back to a Wikipedia search like any other mechanic.
+        // linked to something wrong, and fall back to a BGG-scoped search like any other mechanic
+        // with no curated entry (see bggSearchLink / getLinkFor further down).
         const MECHANIC_LINKS = {
             "Acting": "https://boardgamegeek.com/boardgamemechanic/2073/acting",
             "Action / Event": "https://boardgamegeek.com/boardgamemechanic/2840/action-event",
@@ -294,14 +295,23 @@
             return out.trim() || name; // never search for an empty string
         }
 
-        // Builds a Wikipedia "I'm feeling lucky" search URL: jumps straight to the article when
-        // there's a confident title match, otherwise shows a normal search-results page. Used
-        // instead of guessing an article slug directly (e.g. `/wiki/${name}`), since plenty of item
-        // names don't exactly match a Wikipedia title (plurals, disambiguation, multi-word phrases)
-        // — a search is far more forgiving and never links to a dead page.
+        // Builds a Wikipedia search-results URL (not an auto-jump to the top hit — see the comment
+        // on getLinkFor below for why). Used instead of guessing an article slug directly
+        // (e.g. `/wiki/${name}`), since plenty of item names don't exactly match a Wikipedia title
+        // (plurals, disambiguation, multi-word phrases) — a search is far more forgiving and never
+        // links to a dead page.
         function wikipediaSearchLink(name) {
             const query = normalizeForSearch(name);
-            return `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&title=Special:Search&go=Go`;
+            return `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&title=Special:Search&fulltext=1`;
+        }
+
+        // Builds a DuckDuckGo search scoped to BoardGameGeek's site, for mechanics with no curated
+        // MECHANIC_LINKS entry (see getLinkFor below). More useful than a Wikipedia search for a
+        // game-design mechanic term — even mechanics with no official BGG mechanic *tag* (Engine
+        // Building, Tableau Building, etc.) usually have plenty of real BGG forum/wiki discussion.
+        function bggSearchLink(name) {
+            const query = `site:boardgamegeek.com "${normalizeForSearch(name)}"`;
+            return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
         }
 
         // Builds a direct Merriam-Webster lookup for a single vocabulary word. Unlike theme/component
@@ -314,18 +324,29 @@
 
         // Resolves the "learn more" link for a result card, if any:
         //   1. A hand-picked URL in LINK_MAPS always wins when one exists (currently mechanics only).
-        //   2. Themes in the "Vibes" group (Cozy, Grim, ...) get no link — they're moods, not subjects.
-        //   3. Themes in the "Word Inspiration" group get a dictionary link instead of Wikipedia — UNLESS
+        //   2. Mechanics with no curated entry fall back to a BGG-scoped search (bggSearchLink) rather
+        //      than Wikipedia — a game-design mechanic term is much better served by BGG's own forum
+        //      and wiki content than a general-purpose encyclopedia.
+        //   3. Themes in the "Vibes" group (Cozy, Grim, ...) get no link — they're moods, not subjects.
+        //   4. Themes in the "Word Inspiration" group get a dictionary link instead of Wikipedia — UNLESS
         //      the name is a SCAMPER prompt verb (Combine, Reverse, ...), which gets no link, since
         //      "look up the dictionary definition of Combine" isn't useful the way it is for Redolent
         //      or Sonder.
-        //   4. Everything else falls back to a Wikipedia search.
+        //   5. Everything else (themes outside Vibes/Word Inspiration, and all components) falls back
+        //      to a Wikipedia search. This is deliberately a search-results page, not an auto-jump to
+        //      Wikipedia's single best-guess article (no "go=Go") — plenty of theme words are plural
+        //      nouns that happen to exactly match a movie or franchise title rather than the general
+        //      concept ("Cars" the Pixar film outranks "Car" the vehicle, "Aliens" the 1986 film
+        //      outranks "Alien" the general concept), so auto-jumping risks silently landing on the
+        //      wrong page. A search page costs one extra click but is never confidently wrong.
         // Applies to every item including custom ones typed into the "Add an item…" box — group
         // membership is read live from masterData, so a custom word added to "Word Inspiration" gets
         // a dictionary link automatically, without needing its own curated entry.
         function getLinkFor(categoryKey, itemName) {
             const curated = LINK_MAPS[categoryKey] && LINK_MAPS[categoryKey][itemName];
             if (curated) return { url: curated, source: 'BoardGameGeek' };
+
+            if (categoryKey === 'mechanics') return { url: bggSearchLink(itemName), source: 'BoardGameGeek search' };
 
             if (categoryKey === 'themes') {
                 const group = getGroupFor('themes', itemName);
@@ -370,7 +391,7 @@
                 "Vehicles": ["Trains", "Airships", "Submarines", "Spaceships", "Cars", "Planes", "Trucks", "Motorcycles", "Race Cars", "Monster Trucks", "Helicopters", "Hot Air Balloons", "Tanks", "Bicycles", "Sleds", "Gliders", "Buses", "Rickshaws", "Hovercrafts", "Demolition Derbies"],
                 "Sports": ["Soccer", "Basketball", "Baseball", "Boxing", "The Olympics", "Football", "Hockey", "Golf", "Tennis", "Racing"],
                 "Vibes": ["Cozy", "Competitive", "Simple", "Chaotic", "Relaxing", "Fast-Paced", "Tense", "Whimsical", "Grim", "Strategic", "Abstract", "Nostalgic", "Surreal", "Tactical"],
-                "Word Inspiration": ["Crux", "Redolent", "Interloper", "Deleterious", "Foible", "Saturnine", "Blandishment", "Ephemeral", "Labyrinthine", "Quixotic", "Halcyon", "Ineffable", "Mellifluous", "Sonder", "Substitute", "Combine", "Adapt", "Modify", "put to another use", "Eliminate", "Reverse"]
+                "Word Inspiration": ["Crux", "Redolent", "Interloper", "Deleterious", "Foible", "Saturnine", "Blandishment", "Ephemeral", "Labyrinthine", "Quixotic", "Halcyon", "Ineffable", "Mellifluous", "Sonder", "Substitute", "Combine", "Adapt", "Modify", "Put to another use", "Eliminate", "Reverse"]
             },
             components: {
                 "Cards & Dice": ["18 Cards", "10 Cards", "5 Cards", "a Deck of Cards", "a Single Card", "Two Decks of Cards", "Playing Cards", "Tarot Cards", "1 Die", "2 Dice", "5 Dice", "10 Dice", "Polyhedral Dice", "Custom Dice"],
