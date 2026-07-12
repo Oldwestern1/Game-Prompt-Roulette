@@ -120,7 +120,8 @@
         .header-block { width: 100%; max-width: 1100px; text-align: center; margin-bottom: 2rem; }
         .title-row { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
         .die { width: 3.6rem; height: 3.6rem; color: var(--accent); fill: currentColor; flex-shrink: 0; transition: transform 0.08s ease-out; }
-        h1 { color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 3rem; }
+        h1 { font-family: 'Bungee', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 2.75rem; }
+        .subtitle { margin: 0.4rem 0 0; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; font-size: 0.85rem; font-weight: 600; }
         .title-rule { margin-top: 0.9rem; font-family: monospace; color: var(--accent); opacity: 0.7; font-size: 1.1rem; font-weight: bold; overflow: hidden; white-space: nowrap; }
 
         .container { display: flex; flex-direction: column; gap: 2rem; max-width: 1100px; width: 100%; }
