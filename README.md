@@ -1,6 +1,6 @@
 # Ludoreel
 
-A little game prompt tool for board/tabletop game design inspiration. Spin for a random mix of mechanics, themes, and components to spark a new game idea — lock the parts you like and reroll the rest.
+A little game prompt tool for board/tabletop game design inspiration. Spin for a random mix of mechanics, themes, and components to spark a new game idea.
 
 ## Features
 
@@ -24,8 +24,10 @@ Open the live page in a browser: https://oldwestern1.github.io/Ludoreel-Game-des
 
 ## Contributing
 
-This is a personal project I'm using to learn and practice — but feel free to open an issue or a PR if you'd like to add mechanics, themes, components, or fix something. Not planning any grand roadmap here, just building it out as I go.
+This is a personal project I'm using to learn and practice — but feel free to open an issue or a PR if you'd like to add mechanics, themes, components, or fix something. Not planning to do much else.
 
 ## License
 
 Code is MIT licensed — see [LICENSE](./LICENSE). Bundled audio and Pixabay-sourced assets remain under the Pixabay Content License, not MIT (see Credits above).
+
+## I hope you enjoy this if anyone finds this
